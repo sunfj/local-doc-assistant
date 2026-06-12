@@ -1,0 +1,23 @@
+OpenVINO 简介
+
+OpenVINO™ 是英特尔推出的开源深度学习推理工具套件，专注于将训练好的神经网络模型
+部署到 CPU、GPU、NPU 等多种 Intel 硬件之上，并通过 INT8 / INT4 量化获得显著的
+推理加速与显存压缩。
+
+支持的硬件设备包括：
+- CPU：从第 6 代酷睿到至强 Sapphire Rapids 等 x86 平台
+- GPU：Intel Iris Xe、Intel Arc 独显、数据中心 GPU Flex/Max 系列
+- NPU：Intel Core Ultra Series 1（Meteor Lake）与 Series 2（Lunar Lake / Arrow Lake）
+
+OpenVINO GenAI 与 RAG
+
+OpenVINO GenAI 在 OpenVINO 之上提供了 LLMPipeline / VLMPipeline / WhisperPipeline
+等生成式 AI 专用 API，开箱即用地支持 Qwen、Llama、Phi 等主流模型。
+配合 BGE 等 embedding 模型，可以在本地端侧完成文档分块、向量化、FAISS 检索、
+LLM 综合回答的完整 RAG 流程，整个过程数据不出本机，非常适合企业私有文档分析。
+
+INT4 权重压缩
+
+通过 NNCF 权重压缩工具，可以把模型权重从 FP16 压缩到 INT4，大小缩减约 4 倍，
+在 Intel Core Ultra 上推理速度通常可提升 2~3 倍，是 AI PC 上部署 ≤8B 模型的
+首选方案。

@@ -1,0 +1,80 @@
+{
+  "name": "local-doc-assistant",
+  "version": "1.0.0",
+  "description": "AI PC 本地文档助手 — 基于 OpenVINO INT4 的私有化 RAG Agent Skill。支持 PDF/文本文件上传、本地向量化、离线问答，数据不出机。",
+  "author": "OpenClaw",
+  "tags": ["AIPC", "RAG", "OpenVINO", "INT4", "privacy"],
+  "dependencies": [
+    "openvino>=2025.3",
+    "openvino-genai>=2025.3",
+    "faiss-cpu>=1.7.4",
+    "pymupdf>=1.23.0",
+    "numpy>=1.24.0"
+  ],
+  "hardware": {
+    "min_ram_gb": 8,
+    "supported_devices": ["CPU", "GPU", "NPU"],
+    "recommended_device": "CPU"
+  },
+  "tools": [
+    {
+      "name": "parse_document",
+      "description": "解析上传的文档（PDF/文本），提取文本内容并分块。返回文档ID和文本块数量。",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "file_path": {
+            "type": "string",
+            "description": "文档的本地文件路径，支持PDF和TXT格式"
+          },
+          "chunk_size": {
+            "type": "integer",
+            "description": "分块大小（字符数），默认500",
+            "default": 500
+          }
+        },
+        "required": ["file_path"]
+      },
+      "entry_point": "tools/doc_parser.py:main"
+    },
+    {
+      "name": "build_index",
+      "description": "对已解析的文档构建本地向量索引，用于后续检索。使用 OpenVINO 优化的 embedding 模型。",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "doc_id": {
+            "type": "string",
+            "description": "文档ID，由 parse_document 返回"
+          }
+        },
+        "required": ["doc_id"]
+      },
+      "entry_point": "tools/vector_store.py:main"
+    },
+    {
+      "name": "query_document",
+      "description": "对已构建索引的文档进行语义检索，返回与查询最相关的文本片段。",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "doc_id": {
+            "type": "string",
+            "description": "文档ID，由 parse_document 返回"
+          },
+          "query": {
+            "type": "string",
+            "description": "用户查询问题"
+          },
+          "top_k": {
+            "type": "integer",
+            "description": "返回最相关的片段数量，默认3",
+            "default": 3
+          }
+        },
+        "required": ["doc_id", "query"]
+      },
+      "entry_point": "tools/rag_query.py:main"
+    }
+  ]
+}
