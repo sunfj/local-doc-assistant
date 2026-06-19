@@ -8,3 +8,4 @@ pymupdf>=1.23.0
 numpy>=1.24.0
 json5>=0.9.14
 requests>=2.31.0
+pytest>=8.0.0

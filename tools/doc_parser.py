@@ -10,13 +10,18 @@ import uuid
 
 def chunk_text(text, chunk_size=500, overlap=50):
     """将文本分块，带重叠以保持上下文连贯"""
+    if not text:
+        return []
+    # 限制重叠不超过 chunk_size 的一半，避免步长过小；保证每次至少前进 1
+    overlap = max(0, min(overlap, chunk_size // 2))
+    step = max(1, chunk_size - overlap)
     chunks = []
     start = 0
     while start < len(text):
         end = start + chunk_size
         chunk = text[start:end]
         chunks.append(chunk.strip())
-        start = end - overlap
+        start += step
     return chunks
 
 def extract_pdf(file_path):
