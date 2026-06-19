@@ -25,7 +25,7 @@ def chunk_text(text, chunk_size=500, overlap=50):
     return chunks
 
 def extract_pdf(file_path):
-    """提取 PDF 文本"""
+    """提取 PDF 文本，返回 (text_or_None, error_or_None)"""
     try:
         import fitz  # PyMuPDF
         doc = fitz.open(file_path)
@@ -33,17 +33,17 @@ def extract_pdf(file_path):
         for page in doc:
             text += page.get_text()
         doc.close()
-        return text
+        return text, None
     except ImportError:
         return None, "缺少 pymupdf，请运行: pip install pymupdf"
     except Exception as e:
         return None, f"PDF 解析失败: {str(e)}"
 
 def extract_txt(file_path):
-    """提取 TXT 文本"""
+    """提取 TXT 文本，返回 (text_or_None, error_or_None)"""
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
-            return f.read()
+            return f.read(), None
     except Exception as e:
         return None, f"TXT 读取失败: {str(e)}"
 
@@ -69,7 +69,7 @@ def main(args):
         if error:
             return json.dumps({"status": "error", "message": error}, ensure_ascii=False)
     elif ext in ('.txt', '.md', '.markdown'):
-        text, error = extract_txt(file_path), None
+        text, error = extract_txt(file_path)
         if not text:
             return json.dumps({"status": "error", "message": "文本为空或读取失败"}, ensure_ascii=False)
     else:
