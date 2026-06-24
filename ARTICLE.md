@@ -1,8 +1,8 @@
-# 【AI PC Agent Skills 征文】合同照片一拍，AI 帮你查违约金 —— 基于 OpenVINO + PaddleOCR 的本地合同智能问答 Skill
+# 【AI PC Agent Skills 征文】合同照片一拍，AI 帮你查违约金 —— `scan-and-ask`：基于 OpenVINO + PaddleOCR 的本地扫描文档智能问答 Skill
 
 > 本文是为「AI PC Agent Skills 征文活动」（Intel × OpenVINO 中文社区 × 魔搭社区）撰写的参赛文章。
-> 项目代码：`local-doc-assistant/`
-> Skill 发布地址：[https://modelscope.cn/skills/seunal/local-doc-assistant](https://modelscope.cn/skills/seunal/local-doc-assistant)
+> 项目代码：`scan-and-ask/`
+> Skill 发布地址：[https://modelscope.cn/skills/seunal/scan-and-ask](https://modelscope.cn/skills/seunal/scan-and-ask)
 > 关键词：AI PC、OpenVINO、PaddleOCR、INT4 量化、BGE Embedding、FAISS、本地 OCR、合同问答、隐私计算
 
 ---
@@ -15,7 +15,7 @@
 
 现有的"AI 读文档"方案，几乎都在做同一件事：把文件传到云端。而这恰恰是这类场景的死穴。
 
-本文交付的 `local-doc-assistant` Skill 正是为了解决这个问题：**拍一张合同照片，问一句"违约金怎么算"，AI 帮你从扫描件里找到答案，全程数据不出机。**
+本文交付的 `scan-and-ask` Skill 正是为了解决这个问题：**拍一张合同照片，问一句"违约金怎么算"，AI 帮你从扫描件里找到答案，全程数据不出机。**
 
 ---
 
@@ -23,7 +23,7 @@
 
 > 用一个 ≤35B 的本地小模型当"大脑"，驱动本地 OCR（扫描件识别）+ 本地 RAG（语义检索）两个"手"，完成"扫描件 → 识别文字 → 建索引 → 回答问题"的完整链路。所有环节都跑在用户的 AI PC 上，不依赖任何云服务。
 
-最终产物是一个符合魔搭 Skills 规范的 Agent Skill：`local-doc-assistant`，可被任何支持 Tool Calling 的 ≤35B 模型（Ollama + Qwen3.5/Qwen3.6 等）直接调用。
+最终产物是一个符合魔搭 Skills 规范的 Agent Skill：`scan-and-ask`，可被任何支持 Tool Calling 的 ≤35B 模型（Ollama + Qwen3.5/Qwen3.6 等）直接调用。
 
 ---
 
@@ -42,7 +42,7 @@
                        │ Shell 命令 / Tool Calling
                        ▼
 ┌──────────────────────────────────────────────────────────┐
-│         local-doc-assistant Skill（4 个工具）               │
+│         scan-and-ask Skill（4 个工具）                          │
 │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────┐  │
 │  │ ocr_image│ │  parse   │ │  build   │ │    query     │  │
 │  │ PaddleOCR│ │ doc_parser│ │  index  │ │  rag_query   │  │
@@ -257,7 +257,7 @@ pytest tests/test_skill.py -v
 
 ## 10. 与"云端方案"的对比
 
-| 维度 | 云端 OCR + 云 LLM | local-doc-assistant |
+| 维度 | 云端 OCR + 云 LLM | scan-and-ask |
 |------|-------------------|---------------------|
 | **数据隐私** | ❌ 文档上传到云端 | ✅ 全程本地 |
 | **成本** | 按页/按 token 收费 | 一次性硬件投入 |

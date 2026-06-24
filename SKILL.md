@@ -1,5 +1,5 @@
 ---
-name: local-doc-assistant
+name: scan-and-ask
 description: "Use this skill any time the user wants to analyze, query, summarize, or extract content from a local document file (.pdf / .txt / .md / .png / .jpg) or a scanned/photographed paper document. This includes: answering questions about a specific PDF/TXT/Markdown file, finding clauses in contracts, searching through long reports, summarizing whitepapers, extracting facts from technical documentation, or recognizing text from scanned documents and photos. Trigger whenever the user mentions a local file path ending in .pdf, .txt, .md, .markdown, .png, .jpg, .jpeg, .bmp, .tiff, OR uses words like 'document', 'contract', 'report', 'whitepaper', 'paper', 'manual', 'scan', 'photo', 'OCR', '文档', '合同', '报告', '白皮书', '手册', '扫描件', '识别', '提取文字' together with a file reference. The skill uses PaddleOCR (PP-OCRv6) for local OCR text recognition + OpenVINO INT4 BGE embedding + FAISS for fully local, privacy-preserving Retrieval-Augmented Generation (RAG). All data stays on the machine — never uploaded to the cloud."
 version: "1.1.0"
 author: "OpenClaw"

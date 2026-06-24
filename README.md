@@ -1,9 +1,9 @@
-# local-doc-assistant — AI PC 本地文档助手
+# scan-and-ask — 扫描即问，本地 AI 文档问答
 
-> 基于 OpenVINO INT4 + PaddleOCR 的私有化 OCR + RAG Agent Skill。
-> 扫描合同、拍照证件、电子文档——全程本地识别与问答，数据不出机。
+> 拍张照片/扫描件，AI 帮你从文档里找答案。
+> 基于 PaddleOCR + OpenVINO 的本地 OCR + RAG 智能问答 Skill，全程数据不出机。
 
-**魔搭 Skills 中心**：[https://modelscope.cn/skills/seunal/local-doc-assistant](https://modelscope.cn/skills/seunal/local-doc-assistant)
+**魔搭 Skills 中心**：[https://modelscope.cn/skills/seunal/scan-and-ask](https://modelscope.cn/skills/seunal/scan-and-ask)
 
 ---
 
