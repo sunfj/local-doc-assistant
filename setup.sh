@@ -47,6 +47,10 @@ check_env() {
 }
 
 install_deps() {
+  print_header "配置 pip 国内镜像源（加速下载）"
+  ${PY} -m pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/
+  ${PY} -m pip config set global.trusted-host mirrors.aliyun.com
+
   print_header "安装 Python 依赖"
   ${PY} -m pip install --upgrade pip
   ${PY} -m pip install -r "${SKILL_DIR}/requirements.txt"
