@@ -47,9 +47,12 @@ check_env() {
 }
 
 install_deps() {
-  print_header "配置 pip 国内镜像源（加速下载）"
+  print_header "配置 pip 镜像源（双源策略：阿里云加速 + 官方源兜底）"
+  # extra-index-url 让 pip 在阿里云找不到时自动 fallback 到官方 PyPI
+  # 已知问题：阿里云镜像对 openvino 系列同步不及时，必须配双源
   ${PY} -m pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/
-  ${PY} -m pip config set global.trusted-host mirrors.aliyun.com
+  ${PY} -m pip config set global.extra-index-url https://pypi.org/simple/
+  ${PY} -m pip config set global.trusted-host "mirrors.aliyun.com pypi.org files.pythonhosted.org"
 
   print_header "安装 Python 依赖"
   ${PY} -m pip install --upgrade pip
