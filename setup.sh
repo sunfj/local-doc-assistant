@@ -30,7 +30,7 @@ check_env() {
 
   echo ""
   echo "依赖检查："
-  for pkg in openvino faiss transformers fitz numpy paddleocr; do
+  for pkg in openvino faiss transformers fitz numpy rapidocr_onnxruntime; do
     if ${PY} -c "import ${pkg}" 2>/dev/null; then
       echo "  ✓ ${pkg}"
     else
@@ -56,8 +56,8 @@ install_deps() {
   ${PY} -m pip install -r "${SKILL_DIR}/requirements.txt"
   # 模型转换需要 optimum[openvino]
   ${PY} -m pip install "optimum[openvino,nncf]" modelscope
-  # PaddleOCR（用于扫描件/图片 OCR）
-  ${PY} -m pip install paddlepaddle paddleocr
+  # RapidOCR（轻量级 OCR，基于 PaddleOCR ONNX 模型，无需 PaddlePaddle）
+  ${PY} -m pip install rapidocr-onnxruntime
 }
 
 download_bge_modelscope() {

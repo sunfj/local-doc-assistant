@@ -125,8 +125,8 @@ def test_real_rag_retrieval_with_openvino_bge():
 # ============================================================
 
 @pytest.mark.skipif(
-    importlib.util.find_spec("paddleocr") is None,
-    reason="paddleocr 未安装，跳过 OCR 测试",
+    importlib.util.find_spec("rapidocr_onnxruntime") is None,
+    reason="rapidocr-onnxruntime 未安装，跳过 OCR 测试",
 )
 def test_ocr_scanned_png():
     """扫描件图片 OCR：应正确识别中英文合同内容"""
@@ -146,8 +146,8 @@ def test_ocr_scanned_png():
 
 
 @pytest.mark.skipif(
-    importlib.util.find_spec("paddleocr") is None,
-    reason="paddleocr 未安装，跳过 OCR 测试",
+    importlib.util.find_spec("rapidocr_onnxruntime") is None,
+    reason="rapidocr-onnxruntime 未安装，跳过 OCR 测试",
 )
 def test_ocr_scanned_pdf_auto_route():
     """扫描件 PDF 自动路由 OCR：parse_document 应自动调 OCR"""
@@ -161,11 +161,11 @@ def test_ocr_scanned_pdf_auto_route():
 
 
 @pytest.mark.skipif(
-    importlib.util.find_spec("paddleocr") is None,
-    reason="paddleocr 未安装，跳过 OCR 测试",
+    importlib.util.find_spec("rapidocr_onnxruntime") is None,
+    reason="rapidocr-onnxruntime 未安装，跳过 OCR 测试",
 )
 def test_ocr_engine_auto_fallback():
-    """OCR 引擎 auto 模式：应能回退到 paddle"""
+    """OCR 引擎 auto 模式：应能回退到 onnxruntime"""
     from ocr import main as ocr_main
 
     scan_png = os.path.join(ROOT, "examples", "contract_scan.png")
