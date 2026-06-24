@@ -1,7 +1,7 @@
 {
   "name": "local-doc-assistant",
   "version": "1.0.0",
-  "description": "AI PC 本地文档助手 — 基于 OpenVINO INT4 的私有化 RAG Agent Skill。支持 PDF/文本文件上传、本地向量化、离线问答，数据不出机。",
+  "description": "AI PC 本地文档助手 — 基于 OpenVINO + PaddleOCR 的私有化 OCR + RAG Agent Skill。支持 PDF/扫描件/图片/文本文件上传、本地 OCR 识别、向量化、离线问答，数据不出机。",
   "author": "OpenClaw",
   "tags": ["AIPC", "RAG", "OpenVINO", "INT4", "privacy", "local-first", "document-analysis"],
   "category": "text-analysis",
@@ -26,7 +26,7 @@
   "tools": [
     {
       "name": "parse_document",
-      "description": "解析上传的文档（PDF/文本），提取文本内容并分块。返回文档ID和文本块数量。",
+      "description": "解析上传的文档（PDF/扫描件/图片/文本），提取文本内容并分块。PDF 扫描件和图片自动调用本地 PaddleOCR 识别文字。返回文档ID和文本块数量。",
       "parameters": {
         "type": "object",
         "properties": {
@@ -82,6 +82,26 @@
         "required": ["doc_id", "query"]
       },
       "entry_point": "tools/rag_query.py:main"
+    },
+    {
+      "name": "ocr_image",
+      "description": "对图片（PNG/JPG/BMP/TIFF）或扫描件 PDF 进行本地 OCR 文字识别，使用 PaddleOCR PP-OCRv6，支持中英文混合识别。返回识别文本和置信度。",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "file_path": {
+            "type": "string",
+            "description": "图片或扫描件 PDF 的本地路径"
+          },
+          "engine": {
+            "type": "string",
+            "description": "OCR 后端：auto（优先 OpenVINO，失败回退 PaddlePaddle）、openvino、paddle",
+            "default": "auto"
+          }
+        },
+        "required": ["file_path"]
+      },
+      "entry_point": "tools/ocr.py:main"
     }
   ]
 }

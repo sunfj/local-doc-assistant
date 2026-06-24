@@ -4,10 +4,12 @@ Skill 测试用例
 - 错误输入处理
 - 真实 BGE(OpenVINO) + FAISS 检索链路（若模型已导出）
 - run_agent 工具注册与 schema 转换
+- OCR 扫描件识别（若 paddleocr 已安装）
 """
 import os
 import sys
 import json
+import importlib
 import tempfile
 import pytest
 
@@ -72,7 +74,10 @@ def test_manifest_to_openai_tools():
     manifest = load_manifest(os.path.join(ROOT, "manifest.json"))
     tools = manifest_to_openai_tools(manifest)
     names = [t["function"]["name"] for t in tools]
-    assert names == ["parse_document", "build_index", "query_document"]
+    assert "parse_document" in names
+    assert "build_index" in names
+    assert "query_document" in names
+    assert "ocr_image" in names
     assert all(t["type"] == "function" for t in tools)
     assert tools[0]["function"]["parameters"]["type"] == "object"
 
@@ -81,7 +86,7 @@ def test_tool_registry():
     """entry_point 可动态加载为可调用函数"""
     manifest = load_manifest(os.path.join(ROOT, "manifest.json"))
     registry = build_tool_registry(manifest)
-    assert set(registry) == {"parse_document", "build_index", "query_document"}
+    assert set(registry) == {"parse_document", "build_index", "query_document", "ocr_image"}
     assert all(callable(v) for v in registry.values())
 
 
@@ -113,6 +118,62 @@ def test_real_rag_retrieval_with_openvino_bge():
     assert result["total_results"] == 3
     joined = "\n".join(hit["text"] for hit in result["results"])
     assert "CPU" in joined and "GPU" in joined
+
+
+# ============================================================
+# OCR 测试（需要 paddleocr 已安装）
+# ============================================================
+
+@pytest.mark.skipif(
+    importlib.util.find_spec("paddleocr") is None,
+    reason="paddleocr 未安装，跳过 OCR 测试",
+)
+def test_ocr_scanned_png():
+    """扫描件图片 OCR：应正确识别中英文合同内容"""
+    from ocr import main as ocr_main
+
+    scan_png = os.path.join(ROOT, "examples", "contract_scan.png")
+    if not os.path.exists(scan_png):
+        pytest.skip("contract_scan.png 未生成")
+    result = json.loads(ocr_main({"file_path": scan_png}))
+    assert result["status"] == "success"
+    assert result["total_lines"] > 10
+    assert result["avg_score"] > 0.9
+    joined = result["full_text"]
+    assert "256" in joined
+    assert "0.5%" in joined
+    assert "10%" in joined
+
+
+@pytest.mark.skipif(
+    importlib.util.find_spec("paddleocr") is None,
+    reason="paddleocr 未安装，跳过 OCR 测试",
+)
+def test_ocr_scanned_pdf_auto_route():
+    """扫描件 PDF 自动路由 OCR：parse_document 应自动调 OCR"""
+    scan_pdf = os.path.join(ROOT, "examples", "contract_scan.pdf")
+    if not os.path.exists(scan_pdf):
+        pytest.skip("contract_scan.pdf 未生成")
+    result = json.loads(parse_main({"file_path": scan_pdf}))
+    assert result["status"] == "success"
+    assert result["total_chars"] > 100  # 无 OCR 时为 0
+    assert result["total_chunks"] > 0
+
+
+@pytest.mark.skipif(
+    importlib.util.find_spec("paddleocr") is None,
+    reason="paddleocr 未安装，跳过 OCR 测试",
+)
+def test_ocr_engine_auto_fallback():
+    """OCR 引擎 auto 模式：应能回退到 paddle"""
+    from ocr import main as ocr_main
+
+    scan_png = os.path.join(ROOT, "examples", "contract_scan.png")
+    if not os.path.exists(scan_png):
+        pytest.skip("contract_scan.png 未生成")
+    result = json.loads(ocr_main({"file_path": scan_png, "engine": "auto"}))
+    assert result["status"] == "success"
+    assert "违约" in result["full_text"]
 
 
 if __name__ == "__main__":

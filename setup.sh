@@ -30,7 +30,7 @@ check_env() {
 
   echo ""
   echo "依赖检查："
-  for pkg in openvino faiss transformers fitz numpy; do
+  for pkg in openvino faiss transformers fitz numpy paddleocr; do
     if ${PY} -c "import ${pkg}" 2>/dev/null; then
       echo "  ✓ ${pkg}"
     else
@@ -52,6 +52,8 @@ install_deps() {
   ${PY} -m pip install -r "${SKILL_DIR}/requirements.txt"
   # 模型转换需要 optimum[openvino]
   ${PY} -m pip install "optimum[openvino,nncf]" modelscope
+  # PaddleOCR（用于扫描件/图片 OCR）
+  ${PY} -m pip install paddlepaddle paddleocr
 }
 
 download_bge_modelscope() {
@@ -98,6 +100,10 @@ convert_to_openvino_int4() {
 verify() {
   print_header "验证 Skill 链路"
   ${PY} "${SKILL_DIR}/examples/smoke_test.py"
+  echo ""
+  print_header "验证 OCR 链路"
+  ${PY} "${SKILL_DIR}/examples/generate_scan_samples.py"
+  ${PY} "${SKILL_DIR}/tools/ocr.py" "${SKILL_DIR}/examples/contract_scan.png" 2>&1 | head -5
 }
 
 main() {

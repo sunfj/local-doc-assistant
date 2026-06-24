@@ -1,6 +1,6 @@
 ---
 name: local-doc-assistant
-description: "Use this skill any time the user wants to analyze, query, summarize, or extract content from a local document file (.pdf / .txt / .md). This includes: answering questions about a specific PDF/TXT/Markdown file, finding clauses in contracts, searching through long reports, summarizing whitepapers, extracting facts from technical documentation. Trigger whenever the user mentions a local file path ending in .pdf, .txt, .md, .markdown, OR uses words like 'document', 'contract', 'report', 'whitepaper', 'paper', 'manual', '文档', '合同', '报告', '白皮书', '手册' together with a file reference. The skill uses OpenVINO INT4 + BGE embedding + FAISS for fully local, privacy-preserving Retrieval-Augmented Generation (RAG). All data stays on the machine."
+description: "Use this skill any time the user wants to analyze, query, summarize, or extract content from a local document file (.pdf / .txt / .md / .png / .jpg) or a scanned/photographed paper document. This includes: answering questions about a specific PDF/TXT/Markdown file, finding clauses in contracts, searching through long reports, summarizing whitepapers, extracting facts from technical documentation, or recognizing text from scanned documents and photos. Trigger whenever the user mentions a local file path ending in .pdf, .txt, .md, .markdown, .png, .jpg, .jpeg, .bmp, .tiff, OR uses words like 'document', 'contract', 'report', 'whitepaper', 'paper', 'manual', 'scan', 'photo', 'OCR', '文档', '合同', '报告', '白皮书', '手册', '扫描件', '识别', '提取文字' together with a file reference. The skill uses PaddleOCR (PP-OCRv6) for local OCR text recognition + OpenVINO INT4 BGE embedding + FAISS for fully local, privacy-preserving Retrieval-Augmented Generation (RAG). All data stays on the machine — never uploaded to the cloud."
 version: "1.1.0"
 author: "OpenClaw"
 tags: [AIPC, RAG, OpenVINO, INT4, privacy, local-first, document-analysis, pdf, retrieval]
@@ -31,9 +31,10 @@ If any prerequisite is missing, **run the one-shot setup script first** (see "In
 
 | Task | Command |
 |------|---------|
-| Initial setup (install deps + download BGE model) | `bash setup.sh` |
+| Initial setup (install deps + download models) | `bash setup.sh` |
 | Check environment only | `bash setup.sh --check` |
 | Parse a document into chunks | `python tools/doc_parser.py <file_path>` |
+| OCR a scanned image/PDF directly | `python tools/ocr.py <file_path>` |
 | Build vector index for a parsed doc | `python tools/vector_store.py <doc_id>` |
 | Semantic search inside a doc | `python tools/rag_query.py <doc_id> "<question>"` |
 | End-to-end smoke test | `python examples/smoke_test.py` |
@@ -135,6 +136,16 @@ After Step 3, **compose your final answer using only the retrieved chunks**:
 ### "examples/whitepaper.pdf AI PC 部署本地大模型推荐什么方案？"
 → The skill handles PDFs natively via PyMuPDF — same 3-step flow. Do NOT use built-in `pdf` skill or `read_file` on PDFs; this skill's `parse_document` is purpose-built for this.
 
+### "这张合同照片里的违约金是多少？"（附 .png/.jpg 文件）
+→ `parse_document` handles images natively via PaddleOCR — same 3-step flow:
+1. `python tools/ocr.py <image_path>` (or let `parse_document` auto-route)
+2. Build index
+3. Query
+Do NOT use built-in `read_file` on images — it can't do OCR. This skill's `parse_document` will auto-detect images and call OCR.
+
+### "examples/contract_scan.pdf 这份扫描件里甲方是谁？"
+→ The skill detects scanned PDFs (no text layer) and auto-routes to PaddleOCR. Same 3-step pipeline. `parse_document` will show `total_chars > 0` after OCR succeeds.
+
 ### Multiple questions on the same document
 → Run Step 1 + Step 2 once (record the `doc_id`). For every subsequent question about the same file, **only run Step 3** with that `doc_id`. This is the main performance win — embedding is the expensive part.
 
@@ -155,7 +166,8 @@ After Step 3, **compose your final answer using only the retrieved chunks**:
 
 ## Anti-patterns (DON'T do these)
 
-- ❌ Do NOT use the built-in `read_file` tool to open a PDF — it can't extract text. Use this skill's `parse_document` instead.
+- ❌ Do NOT use the built-in `read_file` tool to open a PDF or image — it can't extract text. Use this skill's `parse_document` instead.
+- ❌ Do NOT use the built-in `pdf` skill on scanned PDFs — it can't do OCR. This skill auto-detects scanned PDFs and calls PaddleOCR.
 - ❌ Do NOT use the built-in `search` tool to find content inside a known file — use this skill's RAG pipeline for better semantic recall.
 - ❌ Do NOT skip Step 1 or Step 2 and jump straight to Step 3 — `rag_query.py` needs a built index, it will error.
 - ❌ Do NOT call `parse_document` twice on the same file in the same session — the `doc_id` is deterministic (md5 of file path), so reuse the earlier result.
@@ -165,6 +177,6 @@ After Step 3, **compose your final answer using only the retrieved chunks**:
 
 ## Why this skill matters (for your context awareness)
 
-This skill exists because users in privacy-sensitive scenarios (legal contracts, medical records, internal company docs) cannot upload files to cloud LLMs. The full pipeline — document parsing, vectorization, semantic retrieval, and final LLM answer composition — happens **entirely on the user's machine** using INT4-quantized models that fit easily in 8GB RAM. OpenVINO provides hardware acceleration on Intel CPU / GPU / NPU.
+This skill exists because users in privacy-sensitive scenarios (legal contracts, medical records, internal company docs, scanned IDs) cannot upload files to cloud LLMs or cloud OCR services. The full pipeline — document parsing (including scanned PDF and photo OCR via PaddleOCR), vectorization (OpenVINO BGE INT4), semantic retrieval (FAISS), and final LLM answer composition — happens **entirely on the user's machine** using INT4-quantized models that fit easily in 8GB RAM. OpenVINO provides hardware acceleration on Intel CPU / GPU / NPU.
 
-When a user asks about a local document, this is almost always the right tool — even if the user just says "summarize this file." Trigger eagerly, not conservatively.
+When a user asks about a local document — whether it's a text PDF, a scanned contract photo, or a handwritten note — this is almost always the right tool. Trigger eagerly, not conservatively.
