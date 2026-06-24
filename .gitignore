@@ -1,0 +1,54 @@
+# ======== Python ========
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+.eggs/
+.Python
+build/
+dist/
+wheels/
+pip-wheel-metadata/
+.installed.cfg
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+*.cover
+nosetests.xml
+.tox/
+.nox/
+
+# 虚拟环境
+.venv/
+venv/
+env/
+ENV/
+
+# ======== 操作系统 ========
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+
+# ======== IDE ========
+.idea/
+.vscode/
+*.iml
+
+# ======== 项目运行时产物（可由脚本复现，不入库） ========
+data/*
+!data/.gitkeep
+
+# 本地导出的大模型（~MB ~GB，由 export_models.py 复现）
+models/
+
+# OpenVINO / HuggingFace 缓存
+.cache/
+.hf_cache/
+ov_cache/
