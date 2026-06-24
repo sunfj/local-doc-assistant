@@ -1,37 +1,170 @@
 ---
 name: local-doc-assistant
-description: "AI PC 本地文档助手 — 基于 OpenVINO INT4 的私有化 RAG Agent Skill。支持 PDF/文本文件上传、本地向量化、离线问答，数据不出机。"
-version: "1.0.0"
+description: "Use this skill any time the user wants to analyze, query, summarize, or extract content from a local document file (.pdf / .txt / .md). This includes: answering questions about a specific PDF/TXT/Markdown file, finding clauses in contracts, searching through long reports, summarizing whitepapers, extracting facts from technical documentation. Trigger whenever the user mentions a local file path ending in .pdf, .txt, .md, .markdown, OR uses words like 'document', 'contract', 'report', 'whitepaper', 'paper', 'manual', '文档', '合同', '报告', '白皮书', '手册' together with a file reference. The skill uses OpenVINO INT4 + BGE embedding + FAISS for fully local, privacy-preserving Retrieval-Augmented Generation (RAG). All data stays on the machine."
+version: "1.1.0"
 author: "OpenClaw"
-tags: [AIPC, RAG, OpenVINO, INT4, privacy, local-first, document-analysis]
-always: false
-requires:
-  tools: [parse_document, build_index, query_document]
-  env: []
+tags: [AIPC, RAG, OpenVINO, INT4, privacy, local-first, document-analysis, pdf, retrieval]
+license: "Apache-2.0"
+metadata:
+  builtin_skill_version: "1.1"
 ---
 
-# ROLE
-你是一个本地文档分析助手。你的任务是帮助用户理解他们上传到本地的文档。你拥有以下工具：
+> **Important:** All commands below assume you are running them **from this Skill's directory**.
+> Run with: `cd {this_skill_dir} && python tools/...`
+> Or use the `cwd` parameter of `execute_shell_command`.
 
-# CAPABILITIES
-- parse_document: 解析上传的文档（PDF/文本），提取文本内容并分块。当用户提供文件路径时使用。
-- build_index: 对已解析的文档构建本地向量索引，用于后续语义检索。在 parse_document 成功后调用。
-- query_document: 对已构建索引的文档进行语义检索，返回与用户问题最相关的文本片段。
+# Local Document Assistant Skill
 
-# WORKFLOW
-1. 当用户提供文件路径时，先调用 parse_document 解析文档
-2. 解析成功后，调用 build_index 构建向量索引
-3. 当用户提出关于文档的问题时，调用 query_document 检索相关片段
-4. 根据检索到的片段，用自然语言回答用户问题
+A privacy-first RAG (Retrieval-Augmented Generation) skill that runs **fully on-device**: documents never leave the local machine. Powered by OpenVINO INT4 quantized BGE embedding + FAISS vector search.
 
-# CONSTRAINTS
-- 所有操作均在本地完成，数据不会上传到任何云端服务
-- 如果文档尚未解析或索引尚未构建，先执行前置步骤
-- 回答必须基于文档内容，不要编造信息
-- 如果检索结果为空，告知用户文档中可能不包含相关信息
-- 始终返回中文回复
+## Prerequisites
 
-# ERROR HANDLING
-- 如果文件不存在或格式不支持，返回明确的错误信息
-- 如果检索失败，尝试降低 top_k 值重新检索
-- 如果 LLM 推理失败，返回友好的错误提示
+This skill needs these to work:
+
+- **Python ≥ 3.10**
+- Python packages: `openvino>=2025.3`, `faiss-cpu>=1.7.4`, `pymupdf>=1.23.0`, `numpy>=1.24.0`, `transformers>=4.40.0`, `optimum[openvino,nncf]`, `modelscope`
+- **BGE INT4 OpenVINO model** at `models/bge-small-zh-int4/openvino_model.xml`
+
+If any prerequisite is missing, **run the one-shot setup script first** (see "Initial Setup" below). Do NOT keep retrying tool calls when a prerequisite is missing — it will fail every time. Install first, then retry.
+
+## Quick Reference
+
+| Task | Command |
+|------|---------|
+| Initial setup (install deps + download BGE model) | `bash setup.sh` |
+| Check environment only | `bash setup.sh --check` |
+| Parse a document into chunks | `python tools/doc_parser.py <file_path>` |
+| Build vector index for a parsed doc | `python tools/vector_store.py <doc_id>` |
+| Semantic search inside a doc | `python tools/rag_query.py <doc_id> "<question>"` |
+| End-to-end smoke test | `python examples/smoke_test.py` |
+
+All tools print a single line of JSON to stdout. Read `status` field first: `success` or `error`.
+
+---
+
+## Initial Setup (run ONCE per machine)
+
+Before the very first use on this machine, set up the environment. Use the built-in `execute_shell_command` tool:
+
+```bash
+cd {this_skill_dir} && bash setup.sh
+```
+
+This will:
+1. Install all Python dependencies via `pip`
+2. Download `BAAI/bge-small-zh-v1.5` from **ModelScope** (fast in China; falls back to HuggingFace if needed)
+3. Convert it to OpenVINO INT4 format (~19MB) and place it at `models/bge-small-zh-int4/`
+4. Run the smoke test to verify the full chain
+
+Setup takes 2–5 minutes on a normal machine. If you see `BGE 模型：✓ 已就绪` at the end, you're done. After that, never run setup again unless a dependency was uninstalled.
+
+**Want to quickly check status without installing?** Run:
+```bash
+cd {this_skill_dir} && bash setup.sh --check
+```
+
+---
+
+## Standard Workflow (use this for every user question)
+
+The skill expects this **strict 3-step pipeline** for any document query:
+
+### Step 1 — Parse the document
+
+```bash
+cd {this_skill_dir} && python tools/doc_parser.py "<absolute_or_relative_path_to_doc>"
+```
+
+Supports `.pdf`, `.txt`, `.md`, `.markdown`. Returns JSON with a `doc_id` field — **remember this id**, the next two steps need it.
+
+Example output:
+```json
+{"status":"success","doc_id":"580eecf047e3","total_chunks":2,"file_name":"sample.txt"}
+```
+
+### Step 2 — Build the vector index (only first time per file)
+
+```bash
+cd {this_skill_dir} && python tools/vector_store.py <doc_id>
+```
+
+Uses the OpenVINO BGE model to embed every chunk and build a FAISS index. Cached on disk — repeating Step 2 on the same `doc_id` is fast and idempotent.
+
+Example output:
+```json
+{"status":"success","doc_id":"580eecf047e3","total_vectors":2,"vector_dim":512}
+```
+
+### Step 3 — Semantic query
+
+```bash
+cd {this_skill_dir} && python tools/rag_query.py <doc_id> "<user_question>" --top-k 3
+```
+
+Returns the top-K most relevant chunks with cosine similarity scores. **Always use these chunks as the grounding context for your final natural-language answer to the user.**
+
+Example output:
+```json
+{"status":"success","results":[
+  {"rank":1,"score":0.7527,"chunk_index":0,"text":"OpenVINO 支持的硬件设备包括：CPU、GPU、NPU..."},
+  ...
+]}
+```
+
+---
+
+## How to answer the user
+
+After Step 3, **compose your final answer using only the retrieved chunks**:
+
+- If `score >= 0.5` on the top hit → confident answer, cite the chunk text
+- If all scores `< 0.4` → say "文档中未找到明确相关内容，可能这份文档没有讨论该话题"
+- Never make up content that's not in the retrieved chunks
+- Always respond in **Chinese**
+
+---
+
+## Common Scenarios & Trigger Examples
+
+### "请解析 examples/sample.txt 并告诉我 OpenVINO 支持哪些硬件设备？"
+→ Run Step 1 on `examples/sample.txt`, then Step 2, then Step 3 with query="OpenVINO 支持哪些硬件设备?". Use the top chunks to answer.
+
+### "examples/contract_sample.txt 里如果乙方逾期交货违约金怎么算？"
+→ Same 3-step pipeline. Use `top-k=3` to make sure you catch all relevant clauses.
+
+### "examples/whitepaper.pdf AI PC 部署本地大模型推荐什么方案？"
+→ The skill handles PDFs natively via PyMuPDF — same 3-step flow. Do NOT use built-in `pdf` skill or `read_file` on PDFs; this skill's `parse_document` is purpose-built for this.
+
+### Multiple questions on the same document
+→ Run Step 1 + Step 2 once (record the `doc_id`). For every subsequent question about the same file, **only run Step 3** with that `doc_id`. This is the main performance win — embedding is the expensive part.
+
+---
+
+## Error Handling
+
+| Error message | Fix |
+|---------------|-----|
+| `Embedding 模型不存在` | Run `bash setup.sh` to download + convert BGE |
+| `OpenVINO 未安装` / `faiss 缺失` | Run `bash setup.sh` (or `pip install -r requirements.txt`) |
+| `文档未解析，请先调用 parse_document` | The `doc_id` you passed has no chunks file — re-run Step 1 |
+| `向量索引不存在，请先调用 build_index` | Re-run Step 2 |
+| `文件不存在` | Check the path; this skill does NOT search filesystem — user must give a valid path |
+| `不支持的文件格式` | Only `.pdf`, `.txt`, `.md`, `.markdown`. Other formats: tell user to convert first |
+
+---
+
+## Anti-patterns (DON'T do these)
+
+- ❌ Do NOT use the built-in `read_file` tool to open a PDF — it can't extract text. Use this skill's `parse_document` instead.
+- ❌ Do NOT use the built-in `search` tool to find content inside a known file — use this skill's RAG pipeline for better semantic recall.
+- ❌ Do NOT skip Step 1 or Step 2 and jump straight to Step 3 — `rag_query.py` needs a built index, it will error.
+- ❌ Do NOT call `parse_document` twice on the same file in the same session — the `doc_id` is deterministic (md5 of file path), so reuse the earlier result.
+- ❌ Do NOT install dependencies via `pip install` one-by-one — run `bash setup.sh` instead for a consistent environment.
+
+---
+
+## Why this skill matters (for your context awareness)
+
+This skill exists because users in privacy-sensitive scenarios (legal contracts, medical records, internal company docs) cannot upload files to cloud LLMs. The full pipeline — document parsing, vectorization, semantic retrieval, and final LLM answer composition — happens **entirely on the user's machine** using INT4-quantized models that fit easily in 8GB RAM. OpenVINO provides hardware acceleration on Intel CPU / GPU / NPU.
+
+When a user asks about a local document, this is almost always the right tool — even if the user just says "summarize this file." Trigger eagerly, not conservatively.

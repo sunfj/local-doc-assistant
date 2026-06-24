@@ -85,7 +85,9 @@ def main(args):
     chunks = chunk_text(text, chunk_size=chunk_size)
     
     # 保存文本块到本地（供后续向量化使用）
-    data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data")
+    data_dir = os.path.normpath(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data")
+    )
     os.makedirs(data_dir, exist_ok=True)
     
     chunks_file = os.path.join(data_dir, f"{doc_id}_chunks.json")
