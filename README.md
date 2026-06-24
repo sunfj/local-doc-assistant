@@ -189,6 +189,14 @@ scan-and-ask/
 → 回答：甲方是北京智算科技有限公司
 ```
 
+### 云端首次激活
+```
+用户：请运行 scan-and-ask Skill 的初始化脚本
+→ QwenPaw 执行：cd {skill_dir} && bash setup.sh
+→ 自动完成：升级 pip → 配置清华镜像源 → 安装依赖 → 下载 BGE 模型 → 转换 INT4 → 验证
+→ 输出：✅ Skill 环境就绪，可以开始使用
+```
+
 ### QwenPaw 云端对话
 ```
 用户：帮我解析 examples/contract_scan.pdf，然后告诉我违约金比例是多少
