@@ -79,7 +79,7 @@ convert_to_openvino_int4() {
   print_header "转换为 OpenVINO INT4 格式"
   # 找到刚下载的 HF 模型本地路径（snapshot_download 的目录结构是 cache_dir/<owner>/<name>）
   local HF_PATH
-  HF_PATH=$(find "${MODELS_DIR}/_bge_hf_src" -maxdepth 4 -name "config.json" -path "*bge-small-zh*" | head -1)
+  HF_PATH=$(find "${MODELS_DIR}/_bge_hf_src" -maxdepth 4 -name "config.json" -path "*bge-small-zh*" ! -path "*/1_Pooling/*" | head -1)
   HF_PATH=$(dirname "${HF_PATH}")
 
   if [ -z "${HF_PATH}" ] || [ ! -f "${HF_PATH}/config.json" ]; then
