@@ -160,7 +160,7 @@ def _extract_file_path(query):
     return EXAMPLE_FILE
 
 
-def run_openvino_agent(user_query, manifest_path, device="CPU", llm_model_dir=None, top_k=3):
+def run_openvino_agent(user_query, manifest_path, device="AUTO", llm_model_dir=None, top_k=3):
     """
     OpenVINO 后端：不用外部 Agent，手动完成 RAG，再用 OpenVINO LLM 汇总。
     适合展示「纯本地」闭环；需要先导出 qwen2.5-7b-int4。
@@ -258,7 +258,7 @@ if __name__ == "__main__":
         help="Ollama 模型名（≤35B）",
     )
     parser.add_argument("--max-steps", type=int, default=8)
-    parser.add_argument("--device", default="CPU", help="OpenVINO 设备 CPU/GPU/NPU")
+    parser.add_argument("--device", default="AUTO", help="OpenVINO 设备 AUTO/CPU/GPU/NPU（默认 AUTO 自动选最快）")
     parser.add_argument("--llm-model-dir", default=None, help="OpenVINO LLM 模型目录")
     parser.add_argument("--top-k", type=int, default=3)
     args = parser.parse_args()

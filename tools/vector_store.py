@@ -31,10 +31,11 @@ def build_faiss_index(embeddings):
 def main(args):
     """
     入口函数。被 Agent 框架调用。
-    args: {"doc_id": "...", "device": "CPU"}
+    args: {"doc_id": "...", "device": "AUTO"}
+    device: AUTO（默认，OpenVINO 自动选最快硬件）/ CPU / GPU / NPU
     """
     doc_id = args.get("doc_id", "")
-    device = args.get("device", "CPU")
+    device = args.get("device", "AUTO")
 
     if not doc_id:
         return json.dumps(
@@ -120,7 +121,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="向量索引构建工具")
     parser.add_argument("doc_id", help="文档ID")
-    parser.add_argument("--device", default="CPU", help="OpenVINO 设备 CPU/GPU/NPU")
+    parser.add_argument("--device", default="AUTO", help="OpenVINO 设备 AUTO/CPU/GPU/NPU（默认 AUTO 自动选最快）")
     args = parser.parse_args()
 
     result = main({"doc_id": args.doc_id, "device": args.device})

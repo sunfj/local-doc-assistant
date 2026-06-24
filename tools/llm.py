@@ -18,8 +18,10 @@ def default_llm_model_dir():
     )
 
 
-def load_llm_pipeline(model_dir=None, device="CPU"):
-    """加载 OpenVINO GenAI LLMPipeline，带模块级缓存"""
+def load_llm_pipeline(model_dir=None, device="AUTO"):
+    """加载 OpenVINO GenAI LLMPipeline，带模块级缓存
+    device: AUTO（默认，自动选最快硬件）/ CPU / GPU / NPU
+    """
     if model_dir is None:
         model_dir = default_llm_model_dir()
     model_dir = os.path.abspath(model_dir)
@@ -66,7 +68,7 @@ def _messages_to_prompt(messages):
     return "\n\n".join(lines)
 
 
-def generate(messages, model_dir=None, device="CPU", max_new_tokens=512, temperature=0.2):
+def generate(messages, model_dir=None, device="AUTO", max_new_tokens=512, temperature=0.2):
     """生成最终回答。注意：当前 OpenVINO backend 只负责最终汇总，不做 tool calling 决策。"""
     pipe, error = load_llm_pipeline(model_dir=model_dir, device=device)
     if error:
@@ -94,7 +96,7 @@ def main(args):
     text, error = generate(
         messages,
         model_dir=args.get("model_dir"),
-        device=args.get("device", "CPU"),
+        device=args.get("device", "AUTO"),
         max_new_tokens=args.get("max_new_tokens", 512),
         temperature=args.get("temperature", 0.2),
     )

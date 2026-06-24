@@ -14,12 +14,13 @@ from embedding import load_embedding_model, embed_text
 def main(args):
     """
     入口函数。被 Agent 框架调用。
-    args: {"doc_id": "...", "query": "...", "top_k": 3, "device": "CPU"}
+    args: {"doc_id": "...", "query": "...", "top_k": 3, "device": "AUTO"}
+    device: AUTO（默认，OpenVINO 自动选最快硬件）/ CPU / GPU / NPU
     """
     doc_id = args.get("doc_id", "")
     query = args.get("query", "")
     top_k = args.get("top_k", 3)
-    device = args.get("device", "CPU")
+    device = args.get("device", "AUTO")
 
     if not doc_id:
         return json.dumps(
@@ -113,7 +114,7 @@ if __name__ == "__main__":
     parser.add_argument("doc_id", help="文档ID")
     parser.add_argument("query", help="查询问题")
     parser.add_argument("--top-k", type=int, default=3, help="返回片段数量")
-    parser.add_argument("--device", default="CPU", help="OpenVINO 设备 CPU/GPU/NPU")
+    parser.add_argument("--device", default="AUTO", help="OpenVINO 设备 AUTO/CPU/GPU/NPU（默认 AUTO 自动选最快）")
     args = parser.parse_args()
 
     result = main(

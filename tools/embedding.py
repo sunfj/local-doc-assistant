@@ -19,8 +19,10 @@ def default_model_dir():
     )
 
 
-def load_embedding_model(model_dir=None, device="CPU"):
-    """加载 OpenVINO embedding 模型 + tokenizer，带模块级缓存"""
+def load_embedding_model(model_dir=None, device="AUTO"):
+    """加载 OpenVINO embedding 模型 + tokenizer，带模块级缓存
+    device: "AUTO"（默认，OpenVINO 自动选最快硬件 NPU>GPU>CPU）/ "CPU" / "GPU" / "NPU"
+    """
     if model_dir is None:
         model_dir = default_model_dir()
     model_dir = os.path.abspath(model_dir)
