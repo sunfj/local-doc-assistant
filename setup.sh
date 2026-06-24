@@ -79,7 +79,7 @@ convert_to_openvino_int4() {
   print_header "转换为 OpenVINO INT4 格式"
   # 找到刚下载的 HF 模型本地路径（snapshot_download 的目录结构是 cache_dir/<owner>/<name>）
   local HF_PATH
-  HF_PATH=$(find "${MODELS_DIR}/_bge_hf_src" -maxdepth 4 -name "config.json" -path "*/bge-small-zh*" | head -1)
+  HF_PATH=$(find "${MODELS_DIR}/_bge_hf_src" -maxdepth 4 -name "config.json" -path "*bge-small-zh*" | head -1)
   HF_PATH=$(dirname "${HF_PATH}")
 
   if [ -z "${HF_PATH}" ] || [ ! -f "${HF_PATH}/config.json" ]; then
@@ -90,12 +90,25 @@ convert_to_openvino_int4() {
   echo "源模型：${HF_PATH}"
   echo "输出： ${BGE_DIR}"
 
-  # 用 optimum-cli 直接 export 成 INT4 OpenVINO IR
-  ${PY} -m optimum.commands export openvino \
-    --model "${HF_PATH}" \
-    --task feature-extraction \
-    --weight-format int4 \
-    "${BGE_DIR}"
+  # 查找 optimum-cli 可执行文件
+  local OPT_CLI
+  OPT_CLI="$(dirname "${PY}")/optimum-cli"
+  if [ ! -x "${OPT_CLI}" ]; then
+    OPT_CLI="$(command -v optimum-cli 2>/dev/null || echo "")"
+  fi
+
+  if [ -n "${OPT_CLI}" ] && [ -x "${OPT_CLI}" ]; then
+    echo "使用 optimum-cli: ${OPT_CLI}"
+    "${OPT_CLI}" export openvino \
+      --model "${HF_PATH}" \
+      --task feature-extraction \
+      --weight-format int4 \
+      "${BGE_DIR}"
+  else
+    echo "optimum-cli 不可用，跳过模型转换"
+    echo "请手动运行: pip install optimum[openvino,nncf] && optimum-cli export openvino --model ${HF_PATH} --task feature-extraction --weight-format int4 ${BGE_DIR}"
+    return 1
+  fi
 
   # 清理下载缓存（节省磁盘）
   rm -rf "${MODELS_DIR}/_bge_hf_src"
